@@ -22,9 +22,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.orm.ObjectRetrievalFailureException;
 import org.springframework.samples.petclinic.model.*;
 import org.springframework.samples.petclinic.repository.*;
+import org.springframework.samples.petclinic.rest.advice.NotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -261,6 +263,28 @@ public class ClinicServiceImpl implements ClinicService {
             // Just ignore not found exceptions for Jdbc/Jpa realization
             return null;
         }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Visit> findVisitsByOwner(Integer ownerId) {
+        Owner owner = findOwnerById(ownerId);
+        List<Visit> visits = new ArrayList<>();
+        if (owner != null) {
+            List<Pet> pets = owner.getPets();
+            visits = pets.stream()
+                .flatMap(p -> p.getVisits().stream())
+                .toList();
+        } else {
+            throw new NotFoundException(ownerId.toString());
+        }
+        return visits;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Vet> findVetsBySpecialty(String specialtyName) {
+        return vetRepository.findBySpecialtiesName(specialtyName);
     }
 
 }

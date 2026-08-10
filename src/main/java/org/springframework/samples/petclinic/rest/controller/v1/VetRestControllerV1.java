@@ -119,4 +119,15 @@ public class VetRestControllerV1 implements VetsApi {
         this.clinicService.deleteVet(vet);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
+
+    @PreAuthorize("hasRole(@roles.VET_ADMIN)")
+    @GetMapping("/vets/specialty/{specialtyName}")
+    public ResponseEntity<List<VetDto>> getVetsBySpecialty(
+        @PathVariable String specialtyName) {
+        return ResponseEntity.ok(
+            vetMapper.toVetDtos(
+                clinicService.findVetsBySpecialty(specialtyName)
+            ).stream().toList()
+        );
+    }
 }

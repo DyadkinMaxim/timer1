@@ -51,6 +51,7 @@ public class ExceptionControllerAdvice {
     private static final String ERROR_UNEXPECTED = "An unexpected error occurred while processing your request";
     private static final String ERROR_DATA_INTEGRITY = "The requested resource could not be processed due to a data constraint violation";
     private static final String ERROR_INVALID_REQUEST = "The request contains invalid or missing parameters";
+    private static final String NOT_FOUND = "No entity found";
 
     /**
      * Private method for constructing the {@link ProblemDetail} object passing the name and details of the exception
@@ -69,6 +70,20 @@ public class ExceptionControllerAdvice {
         problemDetail.setProperty("schemaValidationErrors", List.<ValidationMessageDto>of());
         return problemDetail;
     }
+
+    @ExceptionHandler(NotFoundException.class)
+    @ResponseBody
+    public ResponseEntity<ProblemDetail> handleNotFoundException(NotFoundException e, HttpServletRequest request) {
+        logger.warn("NotFoundException at {} {}: {}",
+            request.getMethod(),
+            request.getRequestURI(),
+            e.getMessage());
+        logger.debug("NotFoundException stacktrace", e);
+        HttpStatus status = HttpStatus.NOT_FOUND;
+        ProblemDetail detail = this.detailBuild(e, status, request.getRequestURL(), NOT_FOUND);
+        return ResponseEntity.status(status).body(detail);
+    }
+
 
     /**
      * Handles all general exceptions by returning a 500 Internal Server Error status with error details.
