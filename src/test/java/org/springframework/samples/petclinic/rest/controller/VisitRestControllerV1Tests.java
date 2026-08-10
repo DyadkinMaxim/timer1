@@ -16,7 +16,10 @@
 
 package org.springframework.samples.petclinic.rest.controller;
 
+import org.springframework.data.crossstore.ChangeSetPersister;
+import org.springframework.samples.petclinic.rest.advice.NotFoundException;
 import org.springframework.samples.petclinic.rest.controller.v1.VisitRestControllerV1;
+import org.springframework.samples.petclinic.rest.dto.VisitFieldsDto;
 import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,8 +44,12 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doThrow;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -241,5 +248,66 @@ class VisitRestControllerV1Tests {
     		.content(newVisitAsJSON).accept(MediaType.APPLICATION_JSON_VALUE).contentType(MediaType.APPLICATION_JSON_VALUE))
         	.andExpect(status().isNotFound());
     }
+
+    @Test
+    @WithMockUser(roles="OWNER_ADMIN")
+    void testNewUpdateVisitSuccess() throws Exception {
+        LocalDate now = LocalDate.now();
+        VisitFieldsDto updateVisit = new VisitFieldsDto();
+        updateVisit.setDescription("abcd");
+        updateVisit.setDate(now);
+        ObjectMapper mapper = new ObjectMapper();
+        String updateVisitJSON = mapper.writeValueAsString(updateVisit);
+
+        Visit visit = new Visit();
+        visit.setDate(now);
+        visit.setDescription("abcd");
+        given(clinicService.updateVisitNew(anyInt(), any(VisitFieldsDto.class)))
+            .willReturn(visit);
+
+        mockMvc.perform(put("/api/new/visits/1")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(updateVisitJSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.description").value("abcd"))
+            .andExpect(jsonPath("$.date").value(now.toString()));
+    }
+
+    @Test
+    @WithMockUser(roles="OWNER_ADMIN")
+    void testNewUpdateVisit_VisitNotFound() throws Exception {
+        LocalDate now = LocalDate.now();
+        VisitFieldsDto updateVisit = new VisitFieldsDto();
+        updateVisit.setDescription("abcd");
+        updateVisit.setDate(now);
+        ObjectMapper mapper = new ObjectMapper();
+        String updateVisitJSON = mapper.writeValueAsString(updateVisit);
+
+        given(clinicService.updateVisitNew(anyInt(), any(VisitFieldsDto.class)))
+            .willThrow(NotFoundException.class);
+
+        mockMvc.perform(put("/api/new/visits/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(updateVisitJSON))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @WithMockUser(roles="OWNER_ADMIN")
+    void testNewDeleteVisitSuccess() throws Exception {
+        mockMvc.perform(delete("/api/new/visits/1"))
+            .andExpect(status().isNoContent());
+    }
+
+    @Test
+    @WithMockUser(roles="OWNER_ADMIN")
+    void testNewDeleteVisit_VisitNotFound() throws Exception {
+        doThrow(new NotFoundException("1"))
+            .when(clinicService).deleteVisitNew(1);
+
+        mockMvc.perform(delete("/api/new/visits/1"))
+            .andExpect(status().isNotFound());
+    }
+
 
 }

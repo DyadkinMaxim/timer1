@@ -108,4 +108,23 @@ public class VisitRestControllerV1 implements VisitsApi {
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
+    @PreAuthorize("hasRole(@roles.OWNER_ADMIN)")
+    @PutMapping("/new/visits/{visitId}")
+    public ResponseEntity<VisitDto> updateVisitNew(
+        @PathVariable Integer visitId,
+        @RequestBody VisitFieldsDto visitDto) {
+        return ResponseEntity.ok(
+            visitMapper.toVisitDto(
+                clinicService.updateVisitNew(visitId, visitDto)
+            )
+        );
+    }
+
+    @PreAuthorize("hasRole(@roles.OWNER_ADMIN)")
+    @DeleteMapping("/new/visits/{visitId}")
+    public ResponseEntity<VisitDto> deleteVisitNew(
+        @PathVariable Integer visitId) {
+            clinicService.deleteVisitNew(visitId);
+            return ResponseEntity.noContent().build();
+    }
 }

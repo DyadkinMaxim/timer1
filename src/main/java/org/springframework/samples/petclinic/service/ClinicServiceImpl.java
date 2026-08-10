@@ -23,6 +23,7 @@ import org.springframework.orm.ObjectRetrievalFailureException;
 import org.springframework.samples.petclinic.model.*;
 import org.springframework.samples.petclinic.repository.*;
 import org.springframework.samples.petclinic.rest.advice.NotFoundException;
+import org.springframework.samples.petclinic.rest.dto.VisitFieldsDto;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -287,4 +288,27 @@ public class ClinicServiceImpl implements ClinicService {
         return vetRepository.findBySpecialtiesName(specialtyName);
     }
 
+    @Override
+    @Transactional
+    public Visit updateVisitNew(Integer visitId, VisitFieldsDto visitFieldsDto) {
+        Visit visit = findVisitById(visitId);
+        if (visit != null) {
+            visit.setDescription(visitFieldsDto.getDescription());
+            visit.setDate(visitFieldsDto.getDate());
+        } else {
+            throw new NotFoundException(visitId.toString());
+        }
+        return visit;
+    }
+
+    @Override
+    @Transactional
+    public void deleteVisitNew(Integer visitId) {
+        Visit visit = findVisitById(visitId);
+        if (visit != null) {
+           visitRepository.delete(visit);
+        } else {
+            throw new NotFoundException(visitId.toString());
+        }
+    }
 }
